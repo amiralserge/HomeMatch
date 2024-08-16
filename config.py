@@ -2,7 +2,7 @@ from typing import Any
 
 from dotenv import dotenv_values, load_dotenv
 
-from .utils import singleton
+from utils import singleton
 
 load_dotenv()
 

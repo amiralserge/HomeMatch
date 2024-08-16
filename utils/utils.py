@@ -1,9 +1,9 @@
 import base64
-import numpy as np
 from io import BytesIO
 from mimetypes import guess_type
 from typing import Iterator
 
+import numpy as np
 from PIL import Image as ImageModule
 
 IMG_SIZE = (640, 427)

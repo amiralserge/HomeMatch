@@ -9,8 +9,8 @@ from langchain.chains.conversation.base import ConversationChain
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
-from ..config import CONFIG
-from ..utils import local_image_to_data_url, split_in_chunks
+from config import CONFIG
+from utils import local_image_to_data_url, split_in_chunks
 
 
 class DataGenerator(object):

@@ -1,5 +1,6 @@
 
-from ..utils import singleton, split_in_chunks
+
+from utils.utils import singleton, split_in_chunks
 
 
 def test_singleton():
