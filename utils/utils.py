@@ -1,6 +1,8 @@
 import base64
+import numpy as np
 from io import BytesIO
 from mimetypes import guess_type
+from typing import Iterator
 
 from PIL import Image as ImageModule
 
@@ -22,6 +24,11 @@ def local_image_to_data_url(image_path) -> str:
     base64_encoded_data = base64.b64encode(_buffer.getvalue()).decode("utf-8")
     # Construct the data URL
     return f"data:{mime_type};base64,{base64_encoded_data}"
+
+
+def split_in_chunks(iterator, chunk_size) -> list[Iterator]:
+    indices = np.arange(chunk_size, len(iterator), chunk_size)
+    return list(map(lambda i: i.tolist(), np.array_split(iterator, indices)))
 
 
 class singleton:
