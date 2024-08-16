@@ -1,7 +1,7 @@
 import base64
 from io import BytesIO
 from mimetypes import guess_type
-from typing import Iterator, Tuple
+from typing import Iterator, List, Tuple
 
 import numpy as np
 from PIL import Image as ImageModule
@@ -41,7 +41,9 @@ def local_image_to_data_url(image_path, size: Tuple = IMG_SIZE) -> str:
     return f"data:{mime_type};base64,{b64encode_image(image, format=format)}"
 
 
-def split_in_chunks(iterator, chunk_size) -> list[Iterator]:
+def split_in_chunks(iterator: List, chunk_size: int) -> list[List]:
+    if not len(iterator):
+        return []
     indices = np.arange(chunk_size, len(iterator), chunk_size)
     return list(map(lambda i: i.tolist(), np.array_split(iterator, indices)))
 

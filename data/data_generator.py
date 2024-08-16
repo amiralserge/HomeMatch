@@ -1,7 +1,6 @@
 import glob
 import itertools
 import os
-import time
 from io import StringIO
 from typing import Dict, List
 
