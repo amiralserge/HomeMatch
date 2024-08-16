@@ -1,0 +1,13 @@
+torch
+transformers
+langchain
+langchain-openai
+langchain_community
+lancedb
+openai
+pandas
+pillow
+datasets
+python-dotenv
+gradio
+click
