@@ -3,11 +3,13 @@ import itertools
 import os
 import time
 from io import StringIO
+from typing import Dict, List
 
 import pandas as pd
 from langchain.chains.conversation.base import ConversationChain
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+from ratelimit import limits, sleep_and_retry
 
 from config import CONFIG
 from utils import local_image_to_data_url, split_in_chunks
@@ -40,17 +42,20 @@ class DataGenerator(object):
         picture_collection = itertools.chain(
             glob.glob(f"./{picture_dir}/*.jpg"), glob.glob(f"./{picture_dir}/*.jpeg")
         )
-        for index, image_file in enumerate(picture_collection):
-            data.append(
-                dict(
-                    number=index + 1,
-                    picture_file=image_file,
-                    image_desc=self._get_picture_description(image_file).replace(
-                        "**", ""
-                    ),
-                )
+
+        @sleep_and_retry
+        @limits(calls=1, period=self._request_cool_down)
+        def picture_desc(index, image_file):
+            return dict(
+                number=index,
+                picture_file=image_file,
+                image_desc=self._get_picture_description(image_file).replace(
+                    "**", ""
+                ),
             )
-            time.sleep(5)
+
+        for index, image_file in enumerate(picture_collection):
+            data.append(picture_desc(index + 1, image_file))
         pd.DataFrame(data=data).to_csv(output_file)
 
     def _get_picture_description(self, picture_file):
@@ -117,8 +122,9 @@ the content of every columns must be quoted except bedrooms and bathrooms.""",
             # df.to_csv(f"{uuid.uuid4()}.csv")
             return df.to_dict("records")
 
-        listing_data = []
-        for description_chunks in split_in_chunks(descriptions, 5):
+        @sleep_and_retry
+        @limits(calls=1, period=self._request_cool_down)
+        def _llm_query(descriptions) -> List[Dict]:
             chain = ConversationChain(
                 llm=self._llm,
                 verbose=self._verbose,
@@ -133,8 +139,11 @@ the content of every columns must be quoted except bedrooms and bathrooms.""",
                     ),
                 )
             )
-            listing_data.extend(_process_response(response))
-            time.sleep(self._request_cool_down)
+            return _process_response(response)
+
+        listing_data = []
+        for description_chunks in split_in_chunks(descriptions, 5):
+            listing_data.extend(_llm_query(description_chunks))
 
         listing_df = pd.DataFrame(listing_data)
         # joining the listings df to the files
