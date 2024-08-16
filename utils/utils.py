@@ -1,3 +1,27 @@
+import base64
+from io import BytesIO
+from mimetypes import guess_type
+
+from PIL import Image as ImageModule
+
+IMG_SIZE = (640, 427)
+
+
+def local_image_to_data_url(image_path) -> str:
+    """
+    Function to encode a local image into data URL
+    """
+    mime_type, _ = guess_type(image_path)
+    if mime_type is None:
+        # mime_type = 'image/png'
+        raise Exception(f"Could not detect mime type of file `{image_path}`")
+
+    img = ImageModule.open(image_path).resize(IMG_SIZE)
+    _buffer = BytesIO()
+    img.save(_buffer, format=mime_type.split("/")[1])
+    base64_encoded_data = base64.b64encode(_buffer.getvalue()).decode("utf-8")
+    # Construct the data URL
+    return f"data:{mime_type};base64,{base64_encoded_data}"
 
 
 class singleton:
