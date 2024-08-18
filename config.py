@@ -11,19 +11,20 @@ load_dotenv()
 class config(object):
 
     def __init__(self) -> None:
-        for key, value in dotenv_values().items():
-            self.OPENAI_BASE_URL = https://api.openai.com/v1
-            self.OPENAI_API_KEY = None
-            self.MAX_TOKEN = 2000
-            self.LLM_MODEL = "gpt-4o-mini"
-            self.LLM_TEMPERATURE = 0
-            self.LLM_REQUEST_COOLDOWN_TIME = 5
-            self.LISTING_PICTURES_DIR = "./listing_pictures"
-            self.LISTING_PICTURES_DESCR_FILE = "./listing_pictures/pictures_descriptions.csv"
-            self.LISTING_FILE = "./picture_augmented_listings.csv"
+        self.openai_base_url = "https://api.openai.com/v1"
+        self.openai_api_key = None
+        self.max_token = 2000
+        self.llm_model = "gpt-4o-mini"
+        self.llm_temperature = 0
+        self.llm_request_cooldown_time = 5
+        self.listing_pictures_dir = "./listing_pictures"
+        self.listing_pictures_descr_file = "./listing_pictures/pictures_descriptions.csv"
+        self.listing_file = "./picture_augmented_listings.csv"
 
-            self.VECTOR_DB_ENGINE = "lancedb"
-            self.VECTOR_DB_URI = "./homematch"
+        self.vector_db_engine = "lancedb"
+        self.vector_db_uri = "./homematch"
+
+        for key, value in dotenv_values().items():
             setattr(self, key.lower(), value)
         # self._dotenv_values = dotenv_values()
 
