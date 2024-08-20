@@ -18,7 +18,9 @@ class config(object):
         self.llm_temperature = 0
         self.llm_request_cooldown_time = 5
         self.listing_pictures_dir = "./listing_pictures"
-        self.listing_pictures_descr_file = "./listing_pictures/pictures_descriptions.csv"
+        self.listing_pictures_descr_file = (
+            "./listing_pictures/pictures_descriptions.csv"
+        )
         self.listing_file = "./picture_augmented_listings.csv"
 
         self.vector_db_engine = "lancedb"
