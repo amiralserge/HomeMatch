@@ -1,7 +1,7 @@
 import base64
 from io import BytesIO
 from mimetypes import guess_type
-from typing import Iterator, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from PIL import Image as ImageModule
