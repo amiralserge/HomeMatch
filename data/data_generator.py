@@ -15,6 +15,10 @@ from utils import local_image_to_data_url, split_in_chunks
 
 
 class DataGenerator(object):
+
+    class NonExistentFileException(Exception):
+        pass
+
     def __init__(
         self,
         model=CONFIG.LLM_MODEL,
@@ -44,20 +48,21 @@ class DataGenerator(object):
 
         @sleep_and_retry
         @limits(calls=1, period=self._request_cool_down)
-        def picture_desc(index, image_file):
+        def get_picture_desc(index, image_file):
             return dict(
                 number=index,
                 picture_file=image_file,
-                image_desc=self._get_picture_description(image_file).replace(
+                image_desc=self._get_llm_picture_description(image_file).replace(
                     "**", ""
                 ),
             )
 
         for index, image_file in enumerate(picture_collection):
-            data.append(picture_desc(index + 1, image_file))
-        pd.DataFrame(data=data).to_csv(output_file)
+            data.append(get_picture_desc(index + 1, image_file))
+        df = pd.DataFrame(data=data)
+        df.to_csv(output_file, index=False)
 
-    def _get_picture_description(self, picture_file):
+    def _get_llm_picture_description(self, picture_file):
         prompt = PromptTemplate.from_template(
             """{image}
 Please describe the living room in the picture in terms of
@@ -79,10 +84,40 @@ Provide just the description as response"""
     ) -> None:
 
         if not os.path.isfile(picture_desc_file):
-            raise Exception(
+            raise self.__class__.NonExistentFileException(
                 f"Pictures desctiption files is none existant ({picture_desc_file})"
             )
 
+        columns = ["number", "picture_file", "image_desc"]
+        picture_description_df = pd.read_csv(picture_desc_file)[columns]
+        descriptions = picture_description_df.to_dict("records")
+
+        def _process_response(llm_response):
+            csv_buffer = StringIO(llm_response.replace("```csv", "").replace("```", ""))
+            df = pd.read_csv(csv_buffer)
+            # df.to_csv(f"{uuid.uuid4()}.csv")
+            return df.to_dict("records")
+
+        @sleep_and_retry
+        @limits(calls=1, period=self._request_cool_down)
+        def _llm_query(descriptions) -> List[Dict]:
+            response = self._generate_listings_with_llm(descriptions)
+            return _process_response(response)
+
+        listing_data = []
+        for description_chunks in split_in_chunks(descriptions, 5):
+            listing_data.extend(_llm_query(description_chunks))
+
+        listing_df = pd.DataFrame(listing_data)
+        # joining the listings df to the files
+        picture_description_df.drop(columns=["image_desc"], axis=1, inplace=True)
+        listing_df = listing_df.join(
+            picture_description_df.set_index("number"), on="number"
+        )
+        listing_df.set_index("number")
+        listing_df.to_csv(output_file, index=False)
+
+    def _generate_listings_with_llm(self, descriptions):
         prompt = PromptTemplate(
             input_variables=["descriptions"],
             template="""
@@ -111,44 +146,14 @@ EXAMPLE:
 OUTPUT FORMAT: return the result in a csv format with the headers number,neighborhood,price,bedrooms,bathrooms,house_size,description,neighborhood_description;
 the content of every columns must be quoted except bedrooms and bathrooms.""",
         )
-        columns = ["number", "picture_file", "image_desc"]
-        picture_description_df = pd.read_csv(picture_desc_file)[columns]
-        descriptions = picture_description_df.to_dict("records")
-
-        def _process_response(llm_response):
-            csv_buffer = StringIO(llm_response.replace("```csv", "").replace("```", ""))
-            df = pd.read_csv(csv_buffer)
-            # df.to_csv(f"{uuid.uuid4()}.csv")
-            return df.to_dict("records")
-
-        @sleep_and_retry
-        @limits(calls=1, period=self._request_cool_down)
-        def _llm_query(descriptions) -> List[Dict]:
-            chain = ConversationChain(
-                llm=self._llm,
-                verbose=self._verbose,
+        chain = ConversationChain(llm=self._llm, verbose=self._verbose)
+        return chain.run(
+            prompt.format(
+                descriptions="\n--------\n".join(
+                    [
+                        f"{d['number']}| {d['image_desc'].replace('**','')}"
+                        for d in descriptions
+                    ]
+                ),
             )
-            response = chain.run(
-                prompt.format(
-                    descriptions="\n--------\n".join(
-                        [
-                            f"{d['number']}| {d['image_desc'].replace('**','')}"
-                            for d in description_chunks
-                        ]
-                    ),
-                )
-            )
-            return _process_response(response)
-
-        listing_data = []
-        for description_chunks in split_in_chunks(descriptions, 5):
-            listing_data.extend(_llm_query(description_chunks))
-
-        listing_df = pd.DataFrame(listing_data)
-        # joining the listings df to the files
-        listing_df = listing_df.join(
-            picture_description_df.set_index("number"), on="number"
         )
-        listing_df.drop(columns=["image_desc"], axis=1, inplace=True)
-        listing_df.set_index("number")
-        listing_df.to_csv(output_file)
