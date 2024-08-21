@@ -88,9 +88,8 @@ Neighborhood Description: Sunset Heights is a vibrant neighborhood known for its
             "and a community pool. The area offers convenient access to shopping, cafes, and schools, "
             "making it an ideal place for families and professionals alike."
         )
-        assert (
-            listing.listing_summary
-            == """
+
+        expected_listing_summary = """
 Neighborhood: Sunset Heights
 Price: $650,000
 Bedrooms: 3
@@ -98,5 +97,5 @@ Bathrooms: 2
 House Size: 1,800 sqft
 Description: Welcome to Sunset Heights, where modern living meets comfort! This stunning 3-bedroom, 2-bathroom home features an inviting living area adorned with a cozy sofa and a contemporary coffee table, perfect for gatherings. The kitchen boasts high-end appliances and a stylish island that provides both prep space and casual dining. Enjoy the luxury of a backyard oasis complete with a patio for entertaining and a beautifully landscaped garden. Additional amenities include a two-car garage and access to a community gym, ensuring a healthy lifestyle is at your fingertips.
 Neighborhood Description: Sunset Heights is a vibrant neighborhood known for its family-friendly atmosphere and a wealth of outdoor recreational options. Residents enjoy local parks, hiking trails, and a community pool. The area offers convenient access to shopping, cafes, and schools, making it an ideal place for families and professionals alike.
-"""
-        )  # noqa: E501
+"""  # noqa: E501
+        assert listing.listing_summary == expected_listing_summary
