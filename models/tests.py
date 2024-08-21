@@ -52,11 +52,13 @@ Neighborhood Description: Sunset Heights is a vibrant neighborhood known for its
         assert Listing.parse_price("500000") == 500_000
         assert Listing.parse_price("$700,500.20") == 700_500.20
         assert Listing.parse_price(800_000) == 800_000
+        assert Listing.parse_price("") == 0
 
     def test_parse_house_size(self):
         assert Listing.parse_house_size("1,500 sqft") == 1_500.00
         assert Listing.parse_house_size("sqft2000") == 2_000.00
         assert Listing.parse_house_size(1_700) == 1_700.00
+        assert Listing.parse_house_size("") == 0
 
     def test_listing_model(self):
         listing_record1 = self._create_listing_record(

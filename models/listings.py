@@ -3,8 +3,7 @@ from typing import Dict
 
 from lancedb.embeddings import get_registry
 from lancedb.pydantic import LanceModel, Vector
-from pydantic import (AliasGenerator, ConfigDict, Field, field_validator,
-                      model_validator)
+from pydantic import AliasGenerator, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
 
 _openapi = get_registry().get("openai").create()
@@ -36,12 +35,16 @@ class Listing(LanceModel):
     def parse_house_size(cls, value):
         if value and isinstance(value, str):
             return float(value.replace("sqft", "").replace(",", "").strip())
+        if not value:
+            return 0
         return value
 
     @field_validator("price", mode="before")
     def parse_price(cls, value):
         if value and isinstance(value, str):
             return float(value.replace("$", "").replace(",", ""))
+        if not value:
+            return 0
         return value
 
     @model_validator(mode="after")
