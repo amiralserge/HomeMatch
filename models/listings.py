@@ -35,17 +35,13 @@ class Listing(LanceModel):
     def parse_house_size(cls, value):
         if value and isinstance(value, str):
             return float(value.replace("sqft", "").replace(",", "").strip())
-        if not value:
-            return 0
-        return value
+        return 0 if not value else value
 
     @field_validator("price", mode="before")
     def parse_price(cls, value):
         if value and isinstance(value, str):
             return float(value.replace("$", "").replace(",", ""))
-        if not value:
-            return 0
-        return value
+        return 0 if not value else value
 
     @model_validator(mode="after")
     def validate_model(self) -> Self:
@@ -67,7 +63,7 @@ def get_listing_summary(data: Dict | Listing) -> str:
         data = data.model_dump(include=fields)
 
     def falsey_to_empty_string(value):
-        return "" if not value else value
+        return value if value else ""
 
     neighborhood = falsey_to_empty_string(
         data.get("Neighborhood") or data.get("neighborhood")
