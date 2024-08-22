@@ -1,8 +1,19 @@
 from unittest import mock
 
 import pytest
+from langchain.embeddings import CacheBackedEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
-from .utils import local_image_to_data_url, singleton, split_in_chunks
+from .utils import (
+    ClipImageEmbedding,
+    NoEmbedderForDocumentTypeException,
+    embedd_image,
+    embedd_text,
+    get_embedder,
+    local_image_to_data_url,
+    singleton,
+    split_in_chunks,
+)
 
 
 def test_singleton():
@@ -47,3 +58,64 @@ def test_local_image_to_data_url(open_image_mock, encode_image_mock, guess_type_
     )
     expected_result = "data:image/jpeg;base64,oTQjRXWoXj9Sw9+RZQSs+2mrNSIXRApUWgcTcx0iARWYl5gdYQyXzwdXra35Wd0AShs="
     assert local_image_to_data_url("test.img") == expected_result
+
+
+def test_get_embedder():
+    # test unknown type
+    with pytest.raises(
+        NoEmbedderForDocumentTypeException,
+        match="No embedder define for document of type `unknown`",
+    ):
+        get_embedder(document_type="unknown")
+
+    # test text
+    embedder = get_embedder(document_type="text")
+    assert type(get_embedder(document_type="text")) is OpenAIEmbeddings
+
+    embedder = get_embedder(document_type="text", use_cache=True)
+    assert type(embedder) is CacheBackedEmbeddings
+    assert type(embedder.underlying_embeddings) is OpenAIEmbeddings
+
+    # test image
+    embedder = get_embedder(document_type="image")
+    assert type(embedder) is ClipImageEmbedding
+
+    embedder = get_embedder(document_type="image", use_cache=True)
+    assert type(embedder) is CacheBackedEmbeddings
+    assert type(embedder.underlying_embeddings) is ClipImageEmbedding
+
+
+@mock.patch("utils.utils.__openai_text_embedder")
+@mock.patch("utils.utils.__cached_openai_text_embedder")
+def test_embedd_text(mock__cached_openai_text_embedder, mock___openai_text_embedder):
+    embedd_text("some text input")
+    mock___openai_text_embedder.embed_documents.assert_called_once_with(
+        ["some text input"]
+    )
+    mock__cached_openai_text_embedder.embed_documents.assert_not_called()
+
+    mock___openai_text_embedder.reset_mock()
+    mock__cached_openai_text_embedder.reset_mock()
+
+    embedd_text(documents=["some text input"], use_cache=True)
+    mock___openai_text_embedder.embed_documents.assert_not_called()
+    mock__cached_openai_text_embedder.embed_documents.assert_called_once_with(
+        ["some text input"]
+    )
+
+
+@mock.patch("utils.utils.__clip_image_embedder")
+@mock.patch("utils.utils.__cached_clip_image_embedder")
+def test_embedd_image(mock____cached_clip_image_embedder, mock___clip_image_embedder):
+
+    image = mock.Mock()
+    embedd_image(image)
+    mock___clip_image_embedder.embed_documents.assert_called_once_with([image])
+    mock____cached_clip_image_embedder.embed_documents.assert_not_called()
+
+    mock___clip_image_embedder.reset_mock()
+    mock____cached_clip_image_embedder.reset_mock()
+
+    embedd_image(documents=[image], use_cache=True)
+    mock___clip_image_embedder.embed_documents.assert_not_called()
+    mock____cached_clip_image_embedder.embed_documents.assert_called_once_with([image])
