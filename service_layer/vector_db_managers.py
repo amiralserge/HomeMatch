@@ -241,3 +241,11 @@ class LanceDBManager(AbstractVectorDBManager):
         return list(
             map(_process_record, query_result.select(columns).limit(limit).to_list())
         )
+
+
+def get_vectordb_manager(engine: str) -> AbstractVectorDBManager:
+    _manager_map = {
+        "lancedb": LanceDBManager(),
+        "chromadb": None,  # TODO:
+    }
+    return _manager_map[engine]
