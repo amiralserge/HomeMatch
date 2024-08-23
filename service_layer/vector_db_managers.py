@@ -68,7 +68,9 @@ class AbstractVectorDBManager(ABC):
                 load_method = getattr(
                     self, load_method_name, _build_default_meth(load_method_name)
                 )
-                load_method(model_object, model_name, reset)
+                load_method(
+                    model_object=model_object, model_name=model_name, reset=reset
+                )
 
     @abc.abstractmethod
     def _is_table_empty(self, model_name: str) -> bool:
