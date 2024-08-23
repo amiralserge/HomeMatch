@@ -103,7 +103,7 @@ class AbstractVectorDBManager(ABC):
         raise NotImplementedError()
 
 
-@singleton
+@singleton()
 class LanceDBManager(AbstractVectorDBManager):
     _table_name: str = "listings"
     _text_vector_column: str = "vector"

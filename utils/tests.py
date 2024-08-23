@@ -16,20 +16,40 @@ from .utils import (
 )
 
 
-def test_singleton():
+class TestSigleton:
 
-    @singleton
-    class DummyClass(object):
-        def __init__(self) -> None:
-            self.value = 0
+    def test_singleton(self):
 
-    instance1 = DummyClass()
-    instance2 = DummyClass()
-    assert id(instance1) == id(instance2)
+        @singleton()
+        class DummySingletonClass(object):
+            def __init__(self) -> None:
+                self.value = 0
 
-    instance1.value = 117
-    assert instance2.value == 117
-    assert DummyClass().value == 117
+        instance1 = DummySingletonClass()
+        instance2 = DummySingletonClass()
+        assert id(instance1) == id(instance2)
+
+        instance1.value = 117
+        assert instance2.value == 117
+        assert DummySingletonClass().value == instance1.value == instance2.value == 0
+
+    def test_init_once(self):
+
+        @singleton(init_once=True)
+        class DummySingletonClass(object):
+            def __init__(self) -> None:
+                self.value = 0
+
+        instance1 = DummySingletonClass()
+        instance2 = DummySingletonClass()
+        assert id(instance1) == id(instance2)
+        assert instance1.value == instance2.value == 0
+
+        instance2.value = 1117
+        assert instance1.value == 1117
+
+        instance3 = DummySingletonClass()
+        instance3.value == instance1.value == instance2.value == 1117
 
 
 def test_split_in_chunks():

@@ -1,4 +1,5 @@
 import base64
+import functools
 import io
 from io import BytesIO
 from mimetypes import guess_type
@@ -143,12 +144,28 @@ def get_embedder(document_type: str, use_cache: bool = False) -> Embeddings:
     )
 
 
-class singleton:
-    def __init__(self, klass):
-        self.klass = klass
-        self.instance = None
+def singleton(init_once: bool = False):
+    def inner(klass):
+        original__init__ = klass.__init__
+        original__new__ = klass.__new__
+        klass._instance = None
+        klass._instance_initiated = False
 
-    def __call__(self, *args, **kwargs):
-        if self.instance is None:
-            self.instance = self.klass(*args, **kwargs)
-        return self.instance
+        @functools.wraps(original__init__)
+        def __init__(self, *args, **kwargs):
+            if init_once and self.__class__._instance_initiated:
+                return
+            original__init__(self, *args, **kwargs)
+            self.__class__._instance_initiated = True
+
+        @functools.wraps(original__new__)
+        def __new__(cls, *args, **kwargs):
+            if cls._instance is None:
+                cls._instance = super(klass, cls).__new__(cls, *args, **kwargs)
+            return cls._instance
+
+        klass.__new__ = __new__
+        klass.__init__ = __init__
+        return klass
+
+    return inner
