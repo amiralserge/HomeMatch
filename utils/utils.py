@@ -1,4 +1,5 @@
 import base64
+import io
 from io import BytesIO
 from mimetypes import guess_type
 from typing import Any, List, Tuple, Union
@@ -45,6 +46,12 @@ def local_image_to_data_url(image_path, size: Tuple = IMG_SIZE) -> str:
         image = resize_image(image, size=size)
     # Construct the data URL
     return f"data:{mime_type};base64,{b64encode_image(image, format=format)}"
+
+
+def pil_to_bytes(image: Image) -> bytes:
+    buffer = io.BytesIO()
+    image.save(buffer, format="jpeg")
+    return buffer.getvalue()
 
 
 def split_in_chunks(iterator: List, chunk_size: int) -> list[List]:
