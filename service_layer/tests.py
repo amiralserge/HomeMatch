@@ -1,5 +1,9 @@
+import json
+import os
 import re
+import shutil
 from collections import defaultdict
+from functools import partial
 from typing import Any
 from unittest import mock
 
@@ -10,7 +14,7 @@ from pydantic import BaseModel
 
 from utils.utils import singleton
 
-from .vector_db_managers import AbstractVectorDBManager
+from .vector_db_managers import AbstractVectorDBManager, LanceDBManager
 
 
 class TestAbstractVectorDBManager:
@@ -80,7 +84,7 @@ class TestAbstractVectorDBManager:
 
     def test(self):
 
-        @singleton
+        @singleton(init_once=True)
         class FakeDB:
             def __init__(self) -> None:
                 self._tables = defaultdict(list)
@@ -156,3 +160,52 @@ class TestAbstractVectorDBManager:
             TodoTask(id=5, name="Iron Clothes", priority=3),
             TodoTask(id=6, name="Pick Up Kids from school", priority=5),
         ]
+
+
+@mock.patch.object(LanceDBManager, "_load_listings_data")
+class TestLanceDBManager:
+
+    def test_singleton(self, mock_load_listing_data):
+        LanceDBManager.instance = None
+        manager1 = LanceDBManager()
+        manager2 = LanceDBManager()
+        assert manager1 is manager2
+
+    @mock.patch("service_layer.vector_db_managers.CONFIG")
+    def test(self, mock_config, mock_load_listing_data):
+        LanceDBManager.instance = None
+
+        sample_listing_data_file = "./service_layer/tests_data/sample_listing_data.json"
+        if not os.path.exists(sample_listing_data_file):
+            pytest.skip(f"Couldn't find `{sample_listing_data_file}`")
+
+        if os.path.exists("./test.lance.db.manager"):
+            try:
+                shutil.rmtree("./test.lance.db.manager")
+            except Exception:
+                pytest.skip(
+                    "Found './test.lance.db.manager' already existing and couldnt delete"
+                )
+
+        mock_config.base = "./test.lance.db.manager"
+        mock_config.VECTOR_DB_URI = "./test.lance.db.manager"
+        mock_config.VECTOR_DB_URI = "./test.lance.db.manager"
+
+        with open(sample_listing_data_file, "r") as file:
+            sample_data = json.load(file)
+
+        def _load_listing_data(
+            self, model_object: BaseModel, model_name: str, reset: bool
+        ):
+            table = self._db_connection.open_table(model_name)
+            table.add([model_object(**data) for data in sample_data])
+
+        manager = LanceDBManager()
+        mock_load_listing_data.side_effect = partial(_load_listing_data, self=manager)
+        manager.init()
+
+        assert os.path.exists("./test.lance.db.manager")
+        assert manager._is_table_empty("listings") is False
+        assert manager._get_table("listings").count_rows() == len(sample_data)
+        manager._db_connection.drop_database()
+        manager._text_image_search()
