@@ -131,6 +131,9 @@ def __embedd(
 
 
 class NoEmbedderForDocumentTypeException(Exception):
+    def __init__(self, document_type):
+        self.document_type = document_type
+        super().__init__(f"No embedder found for document type: {document_type}")
     pass
 
 
