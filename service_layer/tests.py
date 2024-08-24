@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from utils.utils import singleton
 
+from .services import ListingsService
 from .vector_db_managers import AbstractVectorDBManager, LanceDBManager
 
 
@@ -213,3 +214,150 @@ class TestLanceDBManager:
         assert manager._get_table("listings").count_rows() == len(sample_data)
 
         manager._db_connection.drop_database()
+
+
+@mock.patch("service_layer.services.get_vectordb_manager")
+class TestListingsService:
+
+    @pytest.fixture
+    @classmethod
+    def setup(cls):
+        ListingsService._instance = None
+        ListingsService._instance_initialized = False
+        yield
+        ListingsService._instance = None
+        ListingsService._instance_initialized = False
+
+    @classmethod
+    def getDummyVectorDBManagerClass(cls):
+        class DummyVectorDBManager(AbstractVectorDBManager):
+            def _init_db(self, reset: bool = False) -> None:
+                raise NotImplementedError
+
+            def _is_table_empty(self, model_name: str) -> bool:
+                raise NotImplementedError
+
+            def _text_image_search(
+                self, text: str, image: Image, limit: int = 3
+            ) -> Any:
+                raise NotImplementedError
+
+            def _text_search(self, text: str) -> Any:
+                raise NotImplementedError
+
+            def _image_search(self, image: Image, limit: int = 3) -> Any:
+                raise NotImplementedError
+
+            def _get_by_id(self, id: str) -> Any:
+                raise NotImplementedError
+
+            def _retrieve_documents(
+                self,
+                query_result: Any,
+                columns: list[str] | None = None,
+                text_field: str = None,
+                limit: int = 3,
+            ) -> Document:
+                raise NotImplementedError
+
+        return DummyVectorDBManager
+
+    def test_singleton(self, mock_get_vectordb_manager, setup):
+        svc1 = ListingsService()
+        svc2 = ListingsService()
+        assert id(svc1) == id(svc2)
+
+    def test_search(self, mock_get_vectordb_manager, setup):
+
+        class DummyVectorDBManager(self.getDummyVectorDBManagerClass()):
+            def init(self, reset: bool = False) -> None:
+                pass
+
+            def _text_search(self, text: str) -> Any:
+                return [
+                    dict(
+                        description=(
+                            "Welcome to Maple Grove, a charming abode designed for modern living. "
+                            "This delightful 2-bedroom, 1-bathroom home's living area is tastefully decorated for relaxation. "
+                            "The open-concept kitchen features modern appliances and a convenient bar stool area for casual meals. "
+                            "A small yet inviting backyard provides a perfect spot for gardening or outdoor gatherings. "
+                            "The house includes a single-car garage and a community clubhouse, creating a warm sense of belonging."
+                        ),
+                        neighborhood="Maple Grove",
+                        city="Montreal",
+                        province="Quebec",
+                        address="402-117 Glory St",
+                        price="$450,000",
+                    ),
+                    dict(
+                        description=(
+                            "Step into Birch Valley, where elegance meets comfort in this lovely 3-bedroom, 2-bathroom home. "
+                            "The spacious living area features neutral-toned furniture and a warm ambiance, perfect for family movie nights. "
+                            "The modern kitchen is designed for functionality and boasts stainless steel appliances and a sleek island for entertaining. "
+                            "Relax in the peaceful backyard or utilize the community's fabulous amenities, including walking paths and a playground. "
+                            "A two-car garage completes this wonderful home."
+                        ),
+                        neighborhood="Birch Valley",
+                        city="Toronto",
+                        province="Ontario",
+                        address="708-1400 Valley St",
+                        price="$700,000",
+                    ),
+                ]
+
+            def _retrieve_documents(
+                self,
+                query_result: Any,
+                columns: list[str] | None = None,
+                text_field: str = None,
+                limit: int = 3,
+            ) -> Document:
+                return [
+                    Document(
+                        page_content=data[text_field],
+                        metadata={k: data[k] for k in columns} if columns else data,
+                    )
+                    for data in query_result[:limit]
+                ]
+
+        dummy_vectordb_manager = DummyVectorDBManager()
+        mock_get_vectordb_manager.return_value = dummy_vectordb_manager
+        svc = ListingsService()
+        mock_get_vectordb_manager.assert_called_once()
+        assert svc._db_manager is dummy_vectordb_manager
+
+        with pytest.raises(
+            ListingsService.InvalidSearchArgsException,
+            match=re.escape(
+                "Invalid arguments: at least one of text and image must be provided"
+            ),
+        ):
+            svc.search(text=None, image=None)
+
+        assert svc.search(
+            text="Beautiful 2-bedrooms",
+            columns=[
+                "price",
+                "city",
+                "neighborhood",
+                "address",
+            ],
+            text_field="description",
+            limit=1,
+        ) == [
+            Document(
+                page_content=(
+                    "Welcome to Maple Grove, a charming abode designed for modern living. "
+                    "This delightful 2-bedroom, 1-bathroom home's living area is tastefully decorated for relaxation. "
+                    "The open-concept kitchen features modern appliances and a convenient bar stool area for casual meals. "
+                    "A small yet inviting backyard provides a perfect spot for gardening or outdoor gatherings. "
+                    "The house includes a single-car garage and a community clubhouse, creating a warm sense of belonging."
+                ),
+                metadata=dict(
+                    price="$450,000",
+                    city="Montreal",
+                    neighborhood="Maple Grove",
+                    address="402-117 Glory St",
+                ),
+            )
+        ]
