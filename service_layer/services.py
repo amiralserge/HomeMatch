@@ -45,9 +45,9 @@ class ListingsService(object):
         )
         if text and image:
             query = self._db_manager._text_image_search(text, image)
-        if text:
+        elif text:
             query = self._db_manager._text_search(text)
-        if image:
+        elif image:
             query = self._db_manager._image_search(image)
         return retrieve_fn(query_result=query)
 
