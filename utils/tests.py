@@ -84,7 +84,7 @@ def test_get_embedder():
     # test unknown type
     with pytest.raises(
         NoEmbedderForDocumentTypeException,
-        match="No embedder define for document of type `unknown`",
+        match="No embedder found for document type: unknown",
     ):
         get_embedder(document_type="unknown")
 

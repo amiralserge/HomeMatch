@@ -134,6 +134,7 @@ class NoEmbedderForDocumentTypeException(Exception):
     def __init__(self, document_type):
         self.document_type = document_type
         super().__init__(f"No embedder found for document type: {document_type}")
+
     pass
 
 
@@ -142,9 +143,7 @@ def get_embedder(document_type: str, use_cache: bool = False) -> Embeddings:
         return __cached_openai_text_embedder if use_cache else __openai_text_embedder
     if document_type == "image":
         return __cached_clip_image_embedder if use_cache else __clip_image_embedder
-    raise NoEmbedderForDocumentTypeException(
-        f"No embedder define for document of type `{document_type}`"
-    )
+    raise NoEmbedderForDocumentTypeException(document_type=document_type)
 
 
 def singleton(init_once: bool = False):
