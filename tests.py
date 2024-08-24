@@ -6,7 +6,7 @@ from config import config
 class TestConfig:
 
     def test_singleton(self):
-        config.instance = None
+        config._instance_initiated = False
 
         cfg1 = config()
         cfg2 = config()
@@ -23,14 +23,14 @@ class TestConfig:
 
     @mock.patch("config.dotenv_values")
     def test_env(self, dotenv_values_mock):
-        config.instance = None
+        config._instance_initiated = False
         dotenv_values_mock.return_value = {
             "LLM_MODEL": "gpt-4o-mini",
             "LLM_TEMPERATURE": 1,
         }
-
         cfg1 = config()
         cfg2 = config()
+        assert cfg1 is cfg2
 
         assert cfg1.llm_model == cfg2.LLM_MODEL == "gpt-4o-mini"
         assert cfg1.LLM_TEMPERATURE == cfg2.llm_temperature == 1

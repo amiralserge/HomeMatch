@@ -207,5 +207,9 @@ class TestLanceDBManager:
         assert os.path.exists("./test.lance.db.manager")
         assert manager._is_table_empty("listings") is False
         assert manager._get_table("listings").count_rows() == len(sample_data)
+
+        manager = LanceDBManager()
+        manager.init()
+        assert manager._get_table("listings").count_rows() == len(sample_data)
+
         manager._db_connection.drop_database()
-        manager._text_image_search()
