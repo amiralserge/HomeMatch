@@ -149,14 +149,14 @@ def singleton(init_once: bool = False):
         original__init__ = klass.__init__
         original__new__ = klass.__new__
         klass._instance = None
-        klass._instance_initiated = False
+        klass._instance_initialized = False
 
         @functools.wraps(original__init__)
         def __init__(self, *args, **kwargs):
-            if init_once and self.__class__._instance_initiated:
+            if init_once and self.__class__._instance_initialized:
                 return
             original__init__(self, *args, **kwargs)
-            self.__class__._instance_initiated = True
+            self.__class__._instance_initialized = True
 
         @functools.wraps(original__new__)
         def __new__(cls, *args, **kwargs):
