@@ -109,6 +109,9 @@ class LanceDBManager(AbstractVectorDBManager):
     _text_vector_column: str = "vector"
     _image_vector_column: str = "image_vector"
 
+    class Exception(Exception):
+        pass
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -143,7 +146,9 @@ class LanceDBManager(AbstractVectorDBManager):
         table = self._db_connection.open_table(model_name)
         listing_file = CONFIG.LISTING_FILE
         if not os.path.exists(listing_file):
-            raise Exception(f"Listings files non-existant: {listing_file}")
+            raise self.__class__.Exception(
+                f"Listings files non-existant: {listing_file}"
+            )
 
         def _load_listings(**kwargs):
             df = pd.read_csv(listing_file)
