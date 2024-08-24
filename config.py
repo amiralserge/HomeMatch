@@ -7,7 +7,7 @@ from utils import singleton
 load_dotenv()
 
 
-@singleton()
+@singleton(init_once=True)
 class config(object):
 
     def __init__(self) -> None:
