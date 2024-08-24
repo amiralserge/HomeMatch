@@ -11,7 +11,8 @@ from langchain_openai import ChatOpenAI
 from ratelimit import limits, sleep_and_retry
 
 from config import CONFIG
-from utils import local_image_to_data_url, split_in_chunks
+from utils.images import local_image_to_data_url
+from utils.lists import split_in_chunks
 
 
 class DataGenerator(object):

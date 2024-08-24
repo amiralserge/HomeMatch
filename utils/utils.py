@@ -1,59 +1,35 @@
-import base64
-from io import BytesIO
-from mimetypes import guess_type
-from typing import List, Tuple
-
-import numpy as np
-from PIL import Image as ImageModule
-from PIL.Image import Image
-
-IMG_SIZE = (640, 427)
+import functools
 
 
-def open_image(image_path) -> Image:
-    return ImageModule.open(image_path)
-
-
-def resize_image(image: Image, size=IMG_SIZE) -> Image:
-    return image.resize(size)
-
-
-def b64encode_image(image: Image, format: str) -> str:
-    buffered = BytesIO()
-    image.save(buffered, format=format)
-    return base64.b64encode(buffered.getvalue()).decode()
-
-
-def local_image_to_data_url(image_path, size: Tuple = IMG_SIZE) -> str:
+def singleton(init_once: bool = False):
     """
-    Function to encode a local image into data URL
+    Decorator for creating singleton classes.
+
+    :param init_once: If True, __init__ is called only once.
+                      If False, __init__ is called on every instance creation.
     """
-    mime_type, _ = guess_type(image_path)
-    if mime_type is None:
-        # mime_type = 'image/png'
-        raise Exception(f"Could not detect mime type of file `{image_path}`")
-    format = mime_type.split("/")[-1]
 
-    image = open_image(image_path)
-    if size:
-        image = resize_image(image, size=size)
-    # Construct the data URL
-    return f"data:{mime_type};base64,{b64encode_image(image, format=format)}"
+    def inner(klass):
+        original__init__ = klass.__init__
+        original__new__ = klass.__new__
+        klass._instance = None
+        klass._instance_initialized = False
 
+        @functools.wraps(original__init__)
+        def __init__(self, *args, **kwargs):
+            if init_once and self.__class__._instance_initialized:
+                return
+            original__init__(self, *args, **kwargs)
+            self.__class__._instance_initialized = True
 
-def split_in_chunks(iterator: List, chunk_size: int) -> list[List]:
-    if not len(iterator):
-        return []
-    indices = np.arange(chunk_size, len(iterator), chunk_size)
-    return list(map(lambda i: i.tolist(), np.array_split(iterator, indices)))
+        @functools.wraps(original__new__)
+        def __new__(cls, *args, **kwargs):
+            if cls._instance is None:
+                cls._instance = super(klass, cls).__new__(cls, *args, **kwargs)
+            return cls._instance
 
+        klass.__new__ = __new__
+        klass.__init__ = __init__
+        return klass
 
-class singleton:
-    def __init__(self, klass):
-        self.klass = klass
-        self.instance = None
-
-    def __call__(self, *args, **kwargs):
-        if self.instance is None:
-            self.instance = self.klass(*args, **kwargs)
-        return self.instance
+    return inner
