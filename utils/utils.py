@@ -147,6 +147,12 @@ def get_embedder(document_type: str, use_cache: bool = False) -> Embeddings:
 
 
 def singleton(init_once: bool = False):
+    """
+    Decorator for creating singleton classes.
+
+    :param init_once: If True, __init__ is called only once.
+                      If False, __init__ is called on every instance creation.
+    """
     def inner(klass):
         original__init__ = klass.__init__
         original__new__ = klass.__new__
