@@ -14,9 +14,9 @@ def open_image(image_path) -> Image:
     return ImageModule.open(image_path)
 
 
-def pil_to_bytes(image: Image) -> bytes:
+def pil_to_bytes(image: Image, format: str = "jpeg") -> bytes:
     buffer = io.BytesIO()
-    image.save(buffer, format="jpeg")
+    image.save(buffer, format=format)
     return buffer.getvalue()
 
 
