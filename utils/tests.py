@@ -17,40 +17,39 @@ from .images import local_image_to_data_url
 from .lists import split_in_chunks
 
 
-class TestSingleton:
+def test_singleton():
 
-    def test_singleton(self):
+    @singleton()
+    class DummySingletonClass(object):
+        def __init__(self) -> None:
+            self.value = 0
 
-        @singleton()
-        class DummySingletonClass(object):
-            def __init__(self) -> None:
-                self.value = 0
+    instance1 = DummySingletonClass()
+    instance2 = DummySingletonClass()
+    assert id(instance1) == id(instance2)
 
-        instance1 = DummySingletonClass()
-        instance2 = DummySingletonClass()
-        assert id(instance1) == id(instance2)
+    instance1.value = 117
+    assert instance2.value == 117
+    assert DummySingletonClass().value == instance1.value == instance2.value == 0
 
-        instance1.value = 117
-        assert instance2.value == 117
-        assert DummySingletonClass().value == instance1.value == instance2.value == 0
 
-    def test_init_once(self):
+def test_singleton_init_once():
 
-        @singleton(init_once=True)
-        class DummySingletonClass(object):
-            def __init__(self) -> None:
-                self.value = 0
+    @singleton(init_once=True)
+    class DummySingletonClass(object):
+        def __init__(self) -> None:
+            self.value = 0
 
-        instance1 = DummySingletonClass()
-        instance2 = DummySingletonClass()
-        assert id(instance1) == id(instance2)
-        assert instance1.value == instance2.value == 0
+    instance1 = DummySingletonClass()
+    instance2 = DummySingletonClass()
+    assert id(instance1) == id(instance2)
+    assert instance1.value == instance2.value == 0
 
-        instance2.value = 1117
-        assert instance1.value == 1117
+    instance2.value = 1117
+    assert instance1.value == 1117
 
-        instance3 = DummySingletonClass()
-        instance3.value == instance1.value == instance2.value == 1117
+    instance3 = DummySingletonClass()
+    instance3.value == instance1.value == instance2.value == 1117
 
 
 def test_split_in_chunks():
@@ -81,29 +80,29 @@ def test_local_image_to_data_url(open_image_mock, encode_image_mock, guess_type_
     assert local_image_to_data_url("test.img") == expected_result
 
 
-def test_get_embedder():
+@pytest.mark.parametrize(
+    "document_type,use_cache,expected_type,undelying_type",
+    [
+        ("text", False, OpenAIEmbeddings, None),
+        ("text", True, CacheBackedEmbeddings, OpenAIEmbeddings),
+        ("image", False, ClipImageEmbedding, None),
+        ("image", True, CacheBackedEmbeddings, ClipImageEmbedding),
+    ],
+)
+def test_get_embedder(document_type, use_cache, expected_type, undelying_type):
+    embedder = get_embedder(document_type=document_type, use_cache=use_cache)
+    assert type(embedder) is expected_type
+    if use_cache:
+        assert type(embedder.underlying_embeddings) is undelying_type
+
+
+def test_get_embedder_unkown_document_type():
     # test unknown type
     with pytest.raises(
         NoEmbedderForDocumentTypeException,
         match="No embedder found for document type: unknown",
     ):
         get_embedder(document_type="unknown")
-
-    # test text
-    embedder = get_embedder(document_type="text")
-    assert type(get_embedder(document_type="text")) is OpenAIEmbeddings
-
-    embedder = get_embedder(document_type="text", use_cache=True)
-    assert type(embedder) is CacheBackedEmbeddings
-    assert type(embedder.underlying_embeddings) is OpenAIEmbeddings
-
-    # test image
-    embedder = get_embedder(document_type="image")
-    assert type(embedder) is ClipImageEmbedding
-
-    embedder = get_embedder(document_type="image", use_cache=True)
-    assert type(embedder) is CacheBackedEmbeddings
-    assert type(embedder.underlying_embeddings) is ClipImageEmbedding
 
 
 @mock.patch("utils.embeddings.__openai_text_embedder")

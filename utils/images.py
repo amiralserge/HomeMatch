@@ -38,10 +38,10 @@ def local_image_to_data_url(image_path, size: Tuple = IMG_SIZE) -> str:
     if mime_type is None:
         # mime_type = 'image/png'
         raise Exception(f"Could not detect mime type of file `{image_path}`")
-    format = mime_type.split("/")[-1]
+    img_format = mime_type.split("/")[-1]
 
     image = open_image(image_path)
     if size:
         image = resize_image(image, size=size)
     # Construct the data URL
-    return f"data:{mime_type};base64,{b64encode_image(image, format=format)}"
+    return f"data:{mime_type};base64,{b64encode_image(image, format=img_format)}"
