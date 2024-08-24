@@ -49,7 +49,9 @@ def local_image_to_data_url(image_path, size: Tuple = IMG_SIZE) -> str:
     return f"data:{mime_type};base64,{b64encode_image(image, format=format)}"
 
 
-def pil_to_bytes(image: Image) -> bytes:
+def pil_to_bytes(image: Image, format: str = "jpeg") -> bytes:
+    buffer = io.BytesIO()
+    image.save(buffer, format=format)
     buffer = io.BytesIO()
     image.save(buffer, format="jpeg")
     return buffer.getvalue()
