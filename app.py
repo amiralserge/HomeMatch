@@ -66,6 +66,18 @@ def generate_listings(config, pictures_desc):
     )
 
 
+@cli.command("start")
+@click.option("--mode", default="chat")
+def start(mode):
+
+    import app_modes
+
+    try:
+        app_modes.run_app(mode)
+    except app_modes.UnknownAppModeException as ex:
+        print(ex)
+
+
 if __name__ == "__main__":
 
     cli()
