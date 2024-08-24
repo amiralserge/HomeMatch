@@ -125,7 +125,7 @@ def embedd_image(
 def __embedd(
     document_type: str, documents: Union[List[Any] | Any], use_cache=False
 ) -> List[List[float]]:
-    documents = [documents] if not isinstance(documents, (list, tuple)) else documents
+    documents = documents if isinstance(documents, (list, tuple)) else [documents]
     embedder = get_embedder(document_type, use_cache=use_cache)
     return embedder.embed_documents(documents)
 

@@ -147,8 +147,7 @@ class LanceDBManager(AbstractVectorDBManager):
 
         def _load_listings(**kwargs):
             df = pd.read_csv(listing_file)
-            for record in df.to_dict("records"):
-                yield record
+            yield from df.to_dict("records")
 
         clip_model_name = "openai/clip-vit-base-patch32"
         clip_model = CLIPModel.from_pretrained(clip_model_name)

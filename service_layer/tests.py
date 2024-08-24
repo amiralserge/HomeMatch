@@ -95,10 +95,9 @@ class TestAbstractVectorDBManager:
             name: str
             priority: int
 
-        inital_db_data = []
-
         class FakeDBManager(self.getVectorDBManagerStubClass(model_names=[])):
             models = [("todo_task", TodoTask)]
+            inital_db_data = []
 
             def _init_db(self, reset: bool = False) -> None:
                 if reset:
@@ -121,13 +120,13 @@ class TestAbstractVectorDBManager:
                     self._db_connection._tables[model_name].clear()
 
                 self._db_connection._tables[model_name].extend(
-                    [model_object(**data) for data in inital_db_data]
+                    [model_object(**data) for data in self.inital_db_data]
                 )
 
         manager = FakeDBManager()
         assert manager._db_connection is None
 
-        inital_db_data = [
+        FakeDBManager.inital_db_data = [
             dict(id=1, name="Do the Dishes", priority=3),
             dict(id=2, name="Do the Laundry", priority=2),
         ]
@@ -137,14 +136,14 @@ class TestAbstractVectorDBManager:
             TodoTask(id=2, name="Do the Laundry", priority=2),
         ]
 
-        inital_db_data.extend(
-            [
-                dict(id=3, name="Cleanup the House", priority=5),
-                dict(id=4, name="Cook Dinner", priority=5),
-                dict(id=5, name="Iron Clothes", priority=3),
-                dict(id=6, name="Pick Up Kids from school", priority=5),
-            ]
-        )
+        # adding more items
+        FakeDBManager.inital_db_data = [
+            *FakeDBManager.inital_db_data,
+            dict(id=3, name="Cleanup the House", priority=5),
+            dict(id=4, name="Cook Dinner", priority=5),
+            dict(id=5, name="Iron Clothes", priority=3),
+            dict(id=6, name="Pick Up Kids from school", priority=5),
+        ]
 
         manager.init()
         assert manager._db_connection._tables["todo_task"] == [
