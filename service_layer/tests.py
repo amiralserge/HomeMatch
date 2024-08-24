@@ -305,6 +305,72 @@ class TestListingsService:
                     ),
                 ]
 
+            def _image_search(self, image: Image, limit: int = 3) -> Any:
+                return [
+                    dict(
+                        description=(
+                            "Step into Maple Grove, where tradition meets modernity in this charming 4-bedroom, 3-bathroom residence. "
+                            "The open-concept living area invites natural light, with a cozy fireplace perfect for chilly evenings. "
+                            "The gourmet kitchen is a chef's dream, featuring granite countertops and a large pantry. "
+                            "Enjoy the beautifully landscaped backyard or explore the nearby park with its scenic trails and pond. "
+                            "This home also includes a finished basement and a double garage."
+                        ),
+                        neighborhood="Maple Grove",
+                        city="Vancouver",
+                        province="British Columbia",
+                        address="215-1600 Maple Dr",
+                        price="$850,000",
+                    ),
+                    dict(
+                        description=(
+                            "Experience luxury living in Cedar Ridge with this stunning 5-bedroom, 4-bathroom home. "
+                            "The grand foyer leads to an expansive living room with vaulted ceilings and a wall of windows. "
+                            "The chef's kitchen is fully equipped with high-end appliances and a spacious breakfast nook. "
+                            "Step outside to the private patio with an outdoor kitchen, perfect for summer BBQs. "
+                            "This home features a home theater, gym, and a three-car garage."
+                        ),
+                        neighborhood="Cedar Ridge",
+                        city="Montreal",
+                        province="Quebec",
+                        address="325-1800 Cedar Ln",
+                        price="$1,200,000",
+                    ),
+                ]
+
+            def _text_image_search(
+                self, text: str, image: Image, limit: int = 3
+            ) -> Any:
+                return [
+                    dict(
+                        description=(
+                            "Welcome to Pine Hill, a serene retreat with a 2-bedroom, 2-bathroom bungalow. "
+                            "The cozy living room has a rustic charm with exposed wooden beams and a stone fireplace. "
+                            "The eat-in kitchen is perfect for casual dining, featuring custom cabinetry and a farmhouse sink. "
+                            "The expansive deck offers stunning views of the surrounding nature. "
+                            "This property also includes a detached garage and a garden shed."
+                        ),
+                        neighborhood="Pine Hill",
+                        city="Calgary",
+                        province="Alberta",
+                        address="412-1900 Pine St",
+                        price="$650,000",
+                    ),
+                    dict(
+                        description=(
+                            "Discover urban living at its finest in Elmwood, with this sleek 2-bedroom, 2-bathroom condo. "
+                            "The open-plan living and dining area is highlighted by floor-to-ceiling windows and modern finishes. "
+                            "The contemporary kitchen boasts quartz countertops and stainless steel appliances. "
+                            "Relax on the private balcony overlooking the city skyline. "
+                            "This unit also includes a dedicated parking space and access to a rooftop terrace."
+                        ),
+                        neighborhood="Elmwood",
+                        city="Toronto",
+                        province="Ontario",
+                        address="510-1450 Elmwood Ave",
+                        price="$550,000",
+                    ),
+                ]
+
             def _retrieve_documents(
                 self,
                 query_result: Any,
@@ -334,17 +400,15 @@ class TestListingsService:
         ):
             svc.search(text=None, image=None)
 
-        assert svc.search(
+        fields = ["price", "city", "neighborhood", "address"]
+        # text only search
+        result = svc.search(
             text="Beautiful 2-bedrooms",
-            columns=[
-                "price",
-                "city",
-                "neighborhood",
-                "address",
-            ],
+            columns=fields,
             text_field="description",
             limit=1,
-        ) == [
+        )
+        expected_result = [
             Document(
                 page_content=(
                     "Welcome to Maple Grove, a charming abode designed for modern living. "
@@ -361,3 +425,68 @@ class TestListingsService:
                 ),
             )
         ]
+        assert result == expected_result
+
+        # image only search
+        result = svc.search(
+            image=mock.Mock(), columns=fields, text_field="description", limit=1
+        )
+        expected_result = [
+            Document(
+                page_content=(
+                    "Step into Maple Grove, where tradition meets modernity in this charming 4-bedroom, 3-bathroom residence. "
+                    "The open-concept living area invites natural light, with a cozy fireplace perfect for chilly evenings. "
+                    "The gourmet kitchen is a chef's dream, featuring granite countertops and a large pantry. "
+                    "Enjoy the beautifully landscaped backyard or explore the nearby park with its scenic trails and pond. "
+                    "This home also includes a finished basement and a double garage."
+                ),
+                metadata=dict(
+                    price="$850,000",
+                    city="Vancouver",
+                    neighborhood="Maple Grove",
+                    address="215-1600 Maple Dr",
+                ),
+            ),
+        ]
+        assert result == expected_result
+
+        # text and image search
+        result = svc.search(
+            text="Beautiful 2-bedrooms",
+            image=mock.Mock(),
+            columns=fields,
+            text_field="description",
+        )
+        expected_result = [
+            Document(
+                page_content=(
+                    "Welcome to Pine Hill, a serene retreat with a 2-bedroom, 2-bathroom bungalow. "
+                    "The cozy living room has a rustic charm with exposed wooden beams and a stone fireplace. "
+                    "The eat-in kitchen is perfect for casual dining, featuring custom cabinetry and a farmhouse sink. "
+                    "The expansive deck offers stunning views of the surrounding nature. "
+                    "This property also includes a detached garage and a garden shed."
+                ),
+                metadata=dict(
+                    price="$650,000",
+                    city="Calgary",
+                    neighborhood="Pine Hill",
+                    address="412-1900 Pine St",
+                ),
+            ),
+            Document(
+                page_content=(
+                    "Discover urban living at its finest in Elmwood, with this sleek 2-bedroom, 2-bathroom condo. "
+                    "The open-plan living and dining area is highlighted by floor-to-ceiling windows and modern finishes. "
+                    "The contemporary kitchen boasts quartz countertops and stainless steel appliances. "
+                    "Relax on the private balcony overlooking the city skyline. "
+                    "This unit also includes a dedicated parking space and access to a rooftop terrace."
+                ),
+                metadata=dict(
+                    price="$550,000",
+                    city="Toronto",
+                    neighborhood="Elmwood",
+                    address="510-1450 Elmwood Ave",
+                ),
+            ),
+        ]
+        assert result == expected_result
