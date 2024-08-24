@@ -21,7 +21,8 @@ from transformers import CLIPModel, CLIPProcessor
 
 from config import CONFIG
 from models.listings import Listing, get_listing_summary
-from utils import embedd_image, embedd_text, pil_to_bytes, singleton
+from utils import embedd_image, embedd_text, singleton
+from utils.images import pil_to_bytes
 
 _logger = logging.getLogger(__name__)
 

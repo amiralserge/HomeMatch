@@ -4,19 +4,20 @@ import pytest
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain_openai import OpenAIEmbeddings
 
-from .utils import (
+from utils import (
     ClipImageEmbedding,
     NoEmbedderForDocumentTypeException,
     embedd_image,
     embedd_text,
     get_embedder,
-    local_image_to_data_url,
     singleton,
-    split_in_chunks,
 )
 
+from .images import local_image_to_data_url
+from .lists import split_in_chunks
 
-class TestSigleton:
+
+class TestSingleton:
 
     def test_singleton(self):
 
@@ -62,9 +63,9 @@ def test_split_in_chunks():
     assert split_in_chunks([1, 2, 3], 1) == [[1], [2], [3]]
 
 
-@mock.patch("utils.utils.guess_type")
-@mock.patch("utils.utils.b64encode_image")
-@mock.patch("utils.utils.open_image")
+@mock.patch("utils.images.guess_type")
+@mock.patch("utils.images.b64encode_image")
+@mock.patch("utils.images.open_image")
 def test_local_image_to_data_url(open_image_mock, encode_image_mock, guess_type_mock):
     guess_type_mock.return_value = (None, None)
     with pytest.raises(
@@ -105,8 +106,8 @@ def test_get_embedder():
     assert type(embedder.underlying_embeddings) is ClipImageEmbedding
 
 
-@mock.patch("utils.utils.__openai_text_embedder")
-@mock.patch("utils.utils.__cached_openai_text_embedder")
+@mock.patch("utils.embeddings.__openai_text_embedder")
+@mock.patch("utils.embeddings.__cached_openai_text_embedder")
 def test_embedd_text(mock__cached_openai_text_embedder, mock___openai_text_embedder):
     embedd_text("some text input")
     mock___openai_text_embedder.embed_documents.assert_called_once_with(
@@ -124,8 +125,8 @@ def test_embedd_text(mock__cached_openai_text_embedder, mock___openai_text_embed
     )
 
 
-@mock.patch("utils.utils.__clip_image_embedder")
-@mock.patch("utils.utils.__cached_clip_image_embedder")
+@mock.patch("utils.embeddings.__clip_image_embedder")
+@mock.patch("utils.embeddings.__cached_clip_image_embedder")
 def test_embedd_image(mock____cached_clip_image_embedder, mock___clip_image_embedder):
 
     image = mock.Mock()
