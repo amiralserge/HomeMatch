@@ -2,7 +2,6 @@ import abc
 import base64
 import logging
 from io import BufferedReader
-from mimetypes import guess_type
 from typing import Any, Dict, Tuple, Union
 
 import gradio as gr
