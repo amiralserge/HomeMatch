@@ -23,7 +23,7 @@ class DataGenerator(object):
     def __init__(
         self,
         model=CONFIG.LLM_MODEL,
-        max_token=CONFIG.MAX_TOKEN,
+        max_token=CONFIG.MAX_TOKENS,
         temperature=CONFIG.LLM_TEMPERATURE,
         request_cool_down=int(CONFIG.LLM_REQUEST_COOLDOWN_TIME),
         verbose=False,

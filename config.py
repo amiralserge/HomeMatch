@@ -13,7 +13,7 @@ class config(object):
     def __init__(self) -> None:
         self.openai_base_url = "https://api.openai.com/v1"
         self.openai_api_key = None
-        self.max_token = 2000
+        self.max_tokens = 2000
         self.llm_model = "gpt-4o-mini"
         self.llm_temperature = 0
         self.llm_request_cooldown_time = 5

@@ -2,6 +2,7 @@ import abc
 import base64
 import logging
 from io import BufferedReader
+from mimetypes import guess_type
 from typing import Any, Dict, Tuple, Union
 
 import gradio as gr
@@ -44,7 +45,6 @@ class AbtractInputQuestionState(ChatState):
         self.question = question
 
     def run(self, history: ChatMessageHistory, user_input: Any):
-        print(f"{self.question} : {user_input}")
         if not user_input:
             return None
         self._process_input(history, user_input)
@@ -77,15 +77,14 @@ class FileInputQuestionState(AbtractInputQuestionState):
             _logger.debug(f"input ignored for {self.question}")
             return
         self.input_inputs = list(
-            map(self._read_file, [f["path"] for f in files if self._is_valid(f)])
+            map(self._read_file, [f for f in files if self._is_valid(f)])
         )
 
     def _read_file(self, file_path) -> BufferedReader:
         return open(file_path, "rb")
 
-    def _is_valid(self, file_input: dict) -> bool:
-        file_ext = (file_input.get("mime_type") or "").split("/")[-1]
-        return file_ext in self._allowed_extentions
+    def _is_valid(self, file_path: str) -> bool:
+        return any(file_path.endswith(ext) for ext in self._allowed_extentions)
 
 
 class ImageInputQuestionState(FileInputQuestionState):
@@ -119,7 +118,7 @@ class UserPrefsInputState(ChatState):
     _listing_rendering_template = """
 <div style="padding: 10px;">
     <div style="margin: 10px;">
-        <img src="{image_uri}"/>
+        <img src="{image_uri}" style="width:640px; height:427px;"/>
     </div>
     <div style="margin: 10px;">
         <p>{description}</p>
@@ -138,10 +137,10 @@ class UserPrefsInputState(ChatState):
     _llm_query = """
 Given the real estate listings in the CONTEXT section,
 For each real estate listing,
-generate a personalized descriptions based on the human preferences in the QUESTIONS ANWERS SUMMARY section
+generate a personalized descriptions based on the human preferences in the QUESTIONS ANSWERS SUMMARY section
     and the description of the listing.
 The descriptions should be unique, appealing, and tailored to the preferences provided,
- emphasizing aspects of the property that align with those preferences.
+ emphasizing in bullet points aspects of the property that align with the user's preferences.
 RETURN INSTRUCTIONS: a json object array. The attributes are id(the listing id), and description(your personalized description)"""
 
     _llm_query_prompt_template = """
@@ -191,15 +190,6 @@ CONTEXT: {context}
         ).get("output_text")
         return relevant_listings, response
 
-    def _extract_user_input(self, history) -> Tuple[str | None, PIL.Image.Image | None]:
-        human_messages = filter(lambda m: type(m) is HumanMessage, history.messages)
-        text = "\n".join(map(lambda m: m.content, human_messages))
-        image_states = list(
-            filter(lambda s: type(s) is ImageInputQuestionState, self._substates)
-        )
-        images = [s.input_files[0] for s in image_states if s.input_files]
-        return text, images[0] if images else None
-
     def _build_llm_query_chain(
         self, history: ChatMessageHistory
     ) -> BaseCombineDocumentsChain:
@@ -220,6 +210,15 @@ CONTEXT: {context}
             chain_type="stuff",
             memory=conversational_memory,
         )
+
+    def _extract_user_input(self, history) -> Tuple[str | None, PIL.Image.Image | None]:
+        human_messages = filter(lambda m: type(m) is HumanMessage, history.messages)
+        text = "\n".join(map(lambda m: m.content, human_messages))
+        image_states = list(
+            filter(lambda s: type(s) is ImageInputQuestionState, self._substates)
+        )
+        images = [s.input_files[0] for s in image_states if s.input_files]
+        return text, images[0] if images else None
 
     def _process_llm_response(
         self, llm_response: str, submitted_listings: list[Document]
@@ -248,10 +247,7 @@ CONTEXT: {context}
                     **listing_info,
                 )
             )
-        return gr.HTML(
-            "<br/><hr/><br/>".join(res)
-            + "<br/><hr/><br/>Type In Anything or Nothing to Restart"
-        )
+        return gr.HTML("<br/><hr/><br/>".join(res))
 
     def next(self) -> Union[Any, Self]:
         if self.current_state_index >= self._substates_number:
@@ -310,7 +306,7 @@ def run():
             history.append([message["text"], None])
 
         res = chat_state_machine.run(message)
-        for msg in list(res) if isinstance(res, str) else res:
+        for msg in [res] if isinstance(res, str) else res:
             history.append((None, msg))
 
         is_terminal_state = chat_state_machine.is_current_state_terminal
@@ -325,7 +321,7 @@ def run():
     def reset_chat(chatbot: gr.Chatbot, chat_input: gr.MultimodalTextbox):
         chat_state_machine.reset()
         return (
-            chat_state_machine.run(None),
+            [(None, chat_state_machine.run(None))],
             gr.MultimodalTextbox(visible=True, interactive=True),
             gr.Button(visible=False),
         )
@@ -340,6 +336,7 @@ def run():
             bubble_full_width=False,
             likeable=False,
             scale=1,
+            value=[(None, chat_state_machine.run(None))],
         )
         with gr.Blocks(fill_width=True):
             restart_btn = gr.Button("Restart", visible=False)
