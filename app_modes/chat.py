@@ -84,7 +84,7 @@ class FileInputQuestionState(AbtractInputQuestionState):
         return open(file_path, "rb")
 
     def _is_valid(self, file_path: str) -> bool:
-        return any([file_path.endswith(ext) for ext in self._allowed_extentions])
+        return any(file_path.endswith(ext) for ext in self._allowed_extentions)
 
 
 class ImageInputQuestionState(FileInputQuestionState):
