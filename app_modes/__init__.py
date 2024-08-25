@@ -3,7 +3,7 @@ import functools
 import logging
 
 _logger = logging.getLogger(__name__)
-APP_MODES = dict()
+APP_MODES = {}
 
 
 class UnknownAppModeException(Exception):
@@ -29,10 +29,10 @@ def register_app_mode(app_fn: callable, name="") -> None:
 
 
 def run_app(mode) -> None:
-    app_fn = APP_MODES.get(mode)
-    if not app_fn:
+    if app_fn := APP_MODES.get(mode):
+        app_fn()
+    else:
         raise UnknownAppModeException(f"Unknown app mode '{mode}'")
-    app_fn()
 
 
 from . import chat, form

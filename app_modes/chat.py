@@ -174,9 +174,11 @@ CONTEXT: {context}
         return self._substates[self.current_state_index].question
 
     def _llm(self, history: ChatMessageHistory) -> Any:
-        # get user input
         text_input, image = self._extract_user_input(history)
-        # listing retrieval based on user input(text or text and image)
+        relevant_listings, response = self._query_llm(history, text_input, image)
+        return self._process_llm_response(response, relevant_listings)
+
+    def _query_llm(self, history, text_input, image):
         relevant_listings = get_relevant_listings(
             text=text_input, image=image, columns=["id", "listing_summary"]
         )
@@ -187,7 +189,7 @@ CONTEXT: {context}
                 "query": self._llm_query,
             }
         ).get("output_text")
-        return self._process_llm_response(response, relevant_listings)
+        return relevant_listings, response
 
     def _extract_user_input(self, history) -> Tuple[str | None, PIL.Image.Image | None]:
         human_messages = filter(lambda m: type(m) is HumanMessage, history.messages)
