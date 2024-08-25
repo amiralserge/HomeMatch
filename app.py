@@ -24,15 +24,15 @@ data_gen_pass_config = click.make_pass_decorator(DataGenerationConfig, ensure=Tr
 @cli.group("generate")
 @click.option("--verbose", is_flag=True)
 @click.option("--out", type=click.File("w"), required=False)
-@click.option("--max_token", default=CONFIG.MAX_TOKEN)
+@click.option("--max_tokens", default=CONFIG.MAX_TOKENS)
 @click.option("--temperature", default=CONFIG.LLM_TEMPERATURE)
 @click.option("--model", default="gpt-4o")
 @data_gen_pass_config
-def generate(config, model, temperature, max_token, out, verbose):
+def generate(config, model, temperature, max_tokens, out, verbose):
     config.model = model
     config.temperature = temperature
     config.verbose = verbose
-    config.max_token = max_token
+    config.max_token = max_tokens
     config.output_file = out
     config.generator = DataGenerator(
         model=config.model,

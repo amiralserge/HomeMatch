@@ -134,7 +134,6 @@ class LanceDBManager(AbstractVectorDBManager):
     def _init_listings(
         self, model_object: BaseModel, model_name: str, reset: bool
     ) -> None:
-        print(model_object, model_name, reset, self._get_table(model_name))
         if reset or not self._get_table(model_name):
             self._db_connection.create_table(
                 model_name, schema=model_object.to_arrow_schema()
